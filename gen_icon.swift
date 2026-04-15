@@ -1,9 +1,55 @@
 import AppKit
+import Foundation
 
-let canvasSize = CGSize(width: 1024, height: 1024)
-let accentColor = NSColor(red: 0x60/255.0, green: 0xA5/255.0, blue: 0x89/255.0, alpha: 1.0)
+// Paths resolved relative to this script file
+let scriptDir = URL(fileURLWithPath: #file).deletingLastPathComponent()
+let repoRoot  = scriptDir.deletingLastPathComponent()
 
-func makeIcon(outputPath: String) {
+let accentColorURL = repoRoot
+    .appendingPathComponent("ios/BusGasteiz/BusGasteiz/Assets.xcassets/AccentColor.colorset/Contents.json")
+let appIconURL = repoRoot
+    .appendingPathComponent("ios/BusGasteiz/BusGasteiz/Assets.xcassets/AppIcon.appiconset/AppIcon.png")
+
+// Parse the AccentColor from its colorset Contents.json
+func loadAccentColor(from url: URL) -> NSColor {
+    guard let data = try? Data(contentsOf: url),
+          let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let colors = json["colors"] as? [[String: Any]],
+          // Prefer the universal idiom; fall back to the first entry
+          let entry = colors.first(where: { ($0["idiom"] as? String) == "universal" }) ?? colors.first,
+          let colorDict = entry["color"] as? [String: Any],
+          let components = colorDict["components"] as? [String: String]
+    else {
+        print("ERROR: could not parse AccentColor from \(url.path)")
+        exit(1)
+    }
+
+    func component(_ key: String) -> CGFloat {
+        guard let raw = components[key] else { return 0 }
+        if raw.hasPrefix("0x") || raw.hasPrefix("0X") {
+            return CGFloat(Int(raw.dropFirst(2), radix: 16) ?? 0) / 255.0
+        }
+        return CGFloat(Double(raw) ?? 0)
+    }
+
+    let r = component("red")
+    let g = component("green")
+    let b = component("blue")
+    let a = component("alpha")
+
+    let space = colorDict["color-space"] as? String ?? "srgb"
+    if space == "display-p3" {
+        return NSColor(displayP3Red: r, green: g, blue: b, alpha: a)
+    } else {
+        return NSColor(srgbRed: r, green: g, blue: b, alpha: a)
+    }
+}
+
+let canvasSize  = CGSize(width: 1024, height: 1024)
+let accentColor = loadAccentColor(from: accentColorURL)
+print("AccentColor: \(accentColor)")
+
+func makeIcon(outputURL: URL) {
     let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil,
         pixelsWide: Int(canvasSize.width),
@@ -52,8 +98,8 @@ func makeIcon(outputPath: String) {
     NSGraphicsContext.restoreGraphicsState()
 
     let pngData = rep.representation(using: .png, properties: [:])!
-    try! pngData.write(to: URL(fileURLWithPath: outputPath))
-    print("Saved: \(outputPath)")
+    try! pngData.write(to: outputURL)
+    print("Saved: \(outputURL.path)")
 }
 
-makeIcon(outputPath: "/tmp/AppIcon-1024.png")
+makeIcon(outputURL: appIconURL)
