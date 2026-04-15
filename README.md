@@ -1,13 +1,3 @@
 # utils
 
-```
- _____________________________________
-/ You display the wonderful traits of \
-\ charm and courtesy.                 /
- -------------------------------------
-        \   ^__^
-         \  (oo)\_______
-            (__)\       )\/\
-                ||----w |
-                ||     ||
-```
+Utilidades diversas.
