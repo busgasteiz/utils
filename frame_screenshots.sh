@@ -70,7 +70,7 @@ find_frame() {
     local orientation="$2"
     local norm_ss
     norm_ss=$(normalize_name "$screenshot_name")
-    local best=""
+    local best="" best_score=0
     for psd in "$FRAMES_DIR"/*.psd; do
         [[ -f "$psd" ]] || continue
         local psd_base
@@ -81,9 +81,14 @@ find_frame() {
         local device="${psd_base%% - *}"
         local norm_dev
         norm_dev=$(normalize_name "$device")
+        # Contar palabras del dispositivo que aparecen en la captura
         if words_contained_in "$norm_dev" "$norm_ss"; then
-            best="$psd"
-            break
+            local score
+            score=$(echo "$norm_dev" | wc -w | tr -d ' ')
+            if (( score > best_score )); then
+                best="$psd"
+                best_score="$score"
+            fi
         fi
     done
     echo "$best"
