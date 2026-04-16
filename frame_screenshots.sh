@@ -4,7 +4,7 @@
 # y las escala al tamaño requerido por App Store Connect.
 #
 # - Capturas : directorio actual (*.png)
-# - Marcos   : subdirectorio frames/ (*.psd)
+# - Marcos   : frames/ junto al propio script (*.psd)
 # - Resultado: directorio actual (*_framed.png)
 #
 # Dispositivos soportados:
@@ -18,7 +18,8 @@
 
 set -euo pipefail
 
-FRAMES_DIR="frames"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRAMES_DIR="$SCRIPT_DIR/frames"
 OUTPUT_DIR="."
 BG_COLOR="white"
 
