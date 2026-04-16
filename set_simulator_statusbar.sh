@@ -27,6 +27,12 @@ fi
 echo "📱  Simuladores iOS activos: ${#BOOTED_DEVICES[@]}"
 echo ""
 
+# ─── Capturar la hora actual (fija para todas las capturas) ──────────────────
+
+CURRENT_TIME=$(date +%H:%M)
+echo "🕐  Hora fijada: $CURRENT_TIME"
+echo ""
+
 # ─── Aplicar configuración de status bar a cada simulador ─────────────────────
 
 for entry in "${BOOTED_DEVICES[@]}"; do
@@ -36,7 +42,7 @@ for entry in "${BOOTED_DEVICES[@]}"; do
     echo "▶  $NAME ($UDID)"
 
     xcrun simctl status_bar "$UDID" override \
-        --time 9:41 \
+        --time "$CURRENT_TIME" \
         --dataNetwork wifi \
         --wifiMode active \
         --wifiBars 3 \
