@@ -15,7 +15,10 @@ done
 
 # ─── Obtener todos los simuladores disponibles (no "unavailable") ─────────────
 
-mapfile -t SIMULATORS < <(
+SIMULATORS=()
+while IFS= read -r entry; do
+    SIMULATORS+=("$entry")
+done < <(
     xcrun simctl list devices available --json \
     | jq -r '.devices
              | to_entries[]
