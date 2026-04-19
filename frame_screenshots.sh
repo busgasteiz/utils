@@ -14,7 +14,9 @@
 #   (landscape: dimensiones invertidas)
 #
 # La correspondencia entre captura y marco se hace por similitud de tokens
-# normalizados, sin depender de formato exacto (e.g. "13-inch" ↔ "13\"").
+# normalizados, sin depender de formato exacto (e.g. "13-inch" ↔ "13\"")
+# ni de tokens de generación de chip (e.g. "M5") ausentes en los nombres
+# de captura del simulador.
 
 set -euo pipefail
 
@@ -81,6 +83,8 @@ find_frame() {
         local device="${psd_base%% - *}"
         local norm_dev
         norm_dev=$(normalize_name "$device")
+        # Eliminar tokens de generación de chip (m5, m4, a17…) que no aparecen en capturas del simulador
+        norm_dev=$(echo "$norm_dev" | sed -E 's/(^|[[:space:]])m[0-9]+([[:space:]]|$)/ /g; s/(^|[[:space:]])a[0-9]+([[:space:]]|$)/ /g' | tr -s ' ' | sed 's/^ //;s/ $//')
         # Contar palabras del dispositivo que aparecen en la captura
         if words_contained_in "$norm_dev" "$norm_ss"; then
             local score
