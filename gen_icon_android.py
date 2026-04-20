@@ -37,12 +37,26 @@ BUS_PATH = (
 )
 
 # ─── SVG para los PNGs de densidad ───────────────────────────────────────────
-# Canvas 1024×1024. El path 24×24 se escala ×42.67 (60% del canvas) y se centra.
-# translate(204.8, 204.8): centra el cuadrado 24×42.67 = 614.4 en 1024 → (1024-614.4)/2=204.8
-ICON_SVG = f"""\
+# Canvas 1024×1024. El path 24×24 se escala al 60% del canvas:
+# scale = (1024 × 0.6) / 24 = 614.4 / 24 = 25.6
+# translate = (1024 - 614.4) / 2 = 204.8  → centra el bloque escalado
+ICON_SVG_SQUARE = f"""\
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <rect width="1024" height="1024" fill="{ACCENT_COLOR}"/>
-  <g transform="translate(204.8,204.8) scale(42.6667)">
+  <g transform="translate(204.8,204.8) scale(25.6)">
+    <path fill="white" d="{BUS_PATH}"/>
+  </g>
+</svg>
+"""
+
+# SVG redondo: mismo icono pero recortado en un círculo con esquinas transparentes.
+ICON_SVG_ROUND = f"""\
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <clipPath id="circle"><circle cx="512" cy="512" r="512"/></clipPath>
+  </defs>
+  <rect width="1024" height="1024" fill="{ACCENT_COLOR}" clip-path="url(#circle)"/>
+  <g transform="translate(204.8,204.8) scale(25.6)" clip-path="url(#circle)">
     <path fill="white" d="{BUS_PATH}"/>
   </g>
 </svg>
@@ -103,23 +117,38 @@ def check_rsvg():
         sys.exit(1)
 
 
-def generate_pngs(svg_path: Path):
+def generate_pngs():
     print("\nGenerando PNGs para cada densidad:")
-    for density, size in DENSITIES.items():
-        out_dir = ANDROID_RES / density
-        out_dir.mkdir(exist_ok=True)
-        for name in ("ic_launcher.png", "ic_launcher_round.png"):
-            out_path = out_dir / name
-            # Elimina la versión .webp preexistente si existe
-            webp_path = out_dir / name.replace(".png", ".webp")
-            if webp_path.exists():
-                webp_path.unlink()
-            subprocess.run(
-                ["rsvg-convert", "-w", str(size), "-h", str(size),
-                 str(svg_path), "-o", str(out_path)],
-                check=True,
-            )
-            print(f"  {out_path.relative_to(REPO_ROOT)}")
+
+    with tempfile.NamedTemporaryFile(suffix=".svg", mode="w", delete=False) as f:
+        f.write(ICON_SVG_SQUARE)
+        svg_square = Path(f.name)
+    with tempfile.NamedTemporaryFile(suffix=".svg", mode="w", delete=False) as f:
+        f.write(ICON_SVG_ROUND)
+        svg_round = Path(f.name)
+
+    try:
+        for density, size in DENSITIES.items():
+            out_dir = ANDROID_RES / density
+            out_dir.mkdir(exist_ok=True)
+            for name, svg_path in (
+                ("ic_launcher.png", svg_square),
+                ("ic_launcher_round.png", svg_round),
+            ):
+                out_path = out_dir / name
+                # Elimina la versión .webp preexistente si existe
+                webp_path = out_dir / name.replace(".png", ".webp")
+                if webp_path.exists():
+                    webp_path.unlink()
+                subprocess.run(
+                    ["rsvg-convert", "-w", str(size), "-h", str(size),
+                     str(svg_path), "-o", str(out_path)],
+                    check=True,
+                )
+                print(f"  {out_path.relative_to(REPO_ROOT)}")
+    finally:
+        svg_square.unlink(missing_ok=True)
+        svg_round.unlink(missing_ok=True)
 
 
 def update_adaptive_background():
@@ -138,20 +167,13 @@ def main():
     check_rsvg()
     print("Generando iconos de la aplicación Android BusGasteiz...")
 
-    with tempfile.NamedTemporaryFile(suffix=".svg", mode="w", delete=False) as f:
-        f.write(ICON_SVG)
-        svg_path = Path(f.name)
+    print("\nActualizando icono adaptativo (background):")
+    update_adaptive_background()
 
-    try:
-        print("\nActualizando icono adaptativo (background):")
-        update_adaptive_background()
+    print("\nActualizando icono adaptativo (foreground):")
+    update_adaptive_foreground()
 
-        print("\nActualizando icono adaptativo (foreground):")
-        update_adaptive_foreground()
-
-        generate_pngs(svg_path)
-    finally:
-        svg_path.unlink(missing_ok=True)
+    generate_pngs()
 
     print("\n✓ Iconos generados correctamente.")
 
