@@ -70,8 +70,17 @@ ICON_SVG_ROUND = f"""\
 """
 
 # ─── SVG para el icono de la tienda (512×512) ─────────────────────────────────
-# Mismo diseño que el icono cuadrado estándar.
-ICON_SVG_STORE = ICON_SVG_SQUARE
+# El bus se muestra un 25% más grande que en los iconos estándar (60% → 75% del canvas):
+# scale = (1024 × 0.75) / 24 = 768 / 24 = 32
+# translate = (1024 - 768) / 2 = 128
+ICON_SVG_STORE = f"""\
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="{ACCENT_COLOR}"/>
+  <g transform="translate(128,128) scale(32)">
+    <path fill="white" d="{BUS_PATH}"/>
+  </g>
+</svg>
+"""
 
 # ─── Densidades mipmap y tamaños en píxeles ───────────────────────────────────
 DENSITIES = {
