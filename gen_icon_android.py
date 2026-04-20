@@ -50,17 +50,28 @@ ICON_SVG_SQUARE = f"""\
 """
 
 # SVG redondo: mismo icono pero recortado en un círculo con esquinas transparentes.
+# El clip-path se aplica en un <g> externo sin transform para que las coordenadas
+# del círculo (en el espacio 0-1024) se evalúen correctamente por librsvg/rsvg-convert.
+# Si se pusiera clip-path en el <g transform="..."> interno, librsvg interpretaría
+# las coordenadas del clip en el espacio local transformado (24×24), dejando solo
+# el fondo verde visible.
 ICON_SVG_ROUND = f"""\
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
     <clipPath id="circle"><circle cx="512" cy="512" r="512"/></clipPath>
   </defs>
-  <rect width="1024" height="1024" fill="{ACCENT_COLOR}" clip-path="url(#circle)"/>
-  <g transform="translate(204.8,204.8) scale(25.6)" clip-path="url(#circle)">
-    <path fill="white" d="{BUS_PATH}"/>
+  <g clip-path="url(#circle)">
+    <rect width="1024" height="1024" fill="{ACCENT_COLOR}"/>
+    <g transform="translate(204.8,204.8) scale(25.6)">
+      <path fill="white" d="{BUS_PATH}"/>
+    </g>
   </g>
 </svg>
 """
+
+# ─── SVG para el icono de la tienda (512×512) ─────────────────────────────────
+# Mismo diseño que el icono cuadrado estándar.
+ICON_SVG_STORE = ICON_SVG_SQUARE
 
 # ─── Densidades mipmap y tamaños en píxeles ───────────────────────────────────
 DENSITIES = {
@@ -163,6 +174,26 @@ def update_adaptive_foreground():
     print(f"  {fg_path.relative_to(REPO_ROOT)}")
 
 
+def generate_store_icon():
+    """Genera el icono 512×512 para la tienda (Google Play) en busgasteiz/temp/."""
+    temp_dir = REPO_ROOT / "temp"
+    temp_dir.mkdir(exist_ok=True)
+    out_path = temp_dir / "ic_play_store_512.png"
+
+    with tempfile.NamedTemporaryFile(suffix=".svg", mode="w", delete=False) as f:
+        f.write(ICON_SVG_STORE)
+        svg_path = Path(f.name)
+    try:
+        subprocess.run(
+            ["rsvg-convert", "-w", "512", "-h", "512", str(svg_path), "-o", str(out_path)],
+            check=True,
+        )
+    finally:
+        svg_path.unlink(missing_ok=True)
+
+    print(f"  {out_path.relative_to(REPO_ROOT)}")
+
+
 def main():
     check_rsvg()
     print("Generando iconos de la aplicación Android BusGasteiz...")
@@ -174,6 +205,9 @@ def main():
     update_adaptive_foreground()
 
     generate_pngs()
+
+    print("\nGenerando icono para Google Play Store (512×512):")
+    generate_store_icon()
 
     print("\n✓ Iconos generados correctamente.")
 
