@@ -27,10 +27,15 @@ fi
 echo "📱  Simuladores iOS activos: ${#BOOTED_DEVICES[@]}"
 echo ""
 
-# ─── Capturar la hora actual (fija para todas las capturas) ──────────────────
+# ─── Determinar la hora a fijar ───────────────────────────────────────────────
 
-CURRENT_TIME=$(date +%H:%M)
-echo "🕐  Hora fijada: $CURRENT_TIME"
+if [[ "${1:-}" =~ ^[0-9]{1,2}:[0-9]{2}$ ]]; then
+    CURRENT_TIME="$1"
+    echo "🕐  Hora fijada (parámetro): $CURRENT_TIME"
+else
+    CURRENT_TIME=$(date +%-H:%M)
+    echo "🕐  Hora fijada (sistema): $CURRENT_TIME"
+fi
 echo ""
 
 # ─── Aplicar configuración de status bar a cada simulador ─────────────────────
